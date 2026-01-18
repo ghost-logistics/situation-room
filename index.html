@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Situation Room - Intelligence Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      overflow: hidden;
+      background: #0a0e14;
+      color: #ffffff;
+    }
+
+    .main-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      height: 60px;
+      background: rgba(10, 14, 20, 0.95);
+      border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 600;
+      color: #64c8ff;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 5px;
+    }
+
+    .tab {
+      padding: 10px 25px;
+      background: rgba(100, 200, 255, 0.1);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      color: rgba(100, 200, 255, 0.7);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .tab:hover {
+      background: rgba(100, 200, 255, 0.2);
+      color: #64c8ff;
+    }
+
+    .tab.active {
+      background: #64c8ff;
+      color: #0a0e14;
+      border-color: #64c8ff;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 12px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab-content {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .header {
+        height: auto;
+        padding: 15px;
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+
+      .logo {
+        font-size: 16px;
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+
+      .tab {
+        padding: 8px 15px;
+        font-size: 11px;
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+      }
+
+      .system-status {
+        font-size: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <div class="header">
+      <div class="logo">
+        <span>◆</span>
+        <span>SITUATION ROOM</span>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" data-tab="orbital">🛰️ Star Sentinel</div>
+        <div class="tab" data-tab="osint">📱 OSINT Observer</div>
+        <div class="tab" data-tab="global">🌍 Global Guard</div>
+      </div>
+
+      <div class="system-status">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span style="color: #00ff88; font-weight: 600;">SYSTEMS NOMINAL</span>
+        </div>
+        <div id="time-display" style="color: #64c8ff; font-weight: 600; letter-spacing: 1px;">
+          --:--:-- UTC
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="tab-content active" id="orbital-content">
+        <iframe src="orbital-viz-all-sats.html"></iframe>
+      </div>
+      
+      <div class="tab-content" id="osint-content">
+        <iframe src="osint-observer.html"></iframe>
+      </div>
+      
+      <div class="tab-content" id="global-content">
+        <iframe src="global-guard.html"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active from all
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(tc => tc.classList.remove('active'));
+
+        // Add active to clicked
+        tab.classList.add('active');
+        const tabName = tab.getAttribute('data-tab');
+        document.getElementById(`${tabName}-content`).classList.add('active');
+      });
+    });
+
+    // Update time display
+    function updateTime() {
+      const now = new Date();
+      const utc = now.toISOString().substring(11, 19);
+      document.getElementById('time-display').textContent = utc + ' UTC';
+    }
+    
+    setInterval(updateTime, 1000);
+    updateTime();
+  </script>
+</body>
+</html>

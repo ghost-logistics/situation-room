@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSINT Observer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #0a0e14;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 20px 30px;
+      border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+      background: rgba(10, 14, 20, 0.95);
+      backdrop-filter: blur(10px);
+    }
+
+    .header h1 {
+      font-size: 20px;
+      color: #64c8ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .main-content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(100, 200, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .thread-column {
+      background: #0a0e14;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .thread-header {
+      padding: 15px 20px;
+      background: rgba(15, 20, 25, 0.9);
+      border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+    }
+
+    .thread-title {
+      font-size: 14px;
+      color: #64c8ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .thread-meta {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .thread-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+
+    .post {
+      background: rgba(20, 30, 45, 0.6);
+      border: 1px solid rgba(100, 200, 255, 0.2);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .post:hover {
+      background: rgba(20, 30, 45, 0.9);
+      border-color: rgba(100, 200, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .post-subreddit {
+      font-size: 11px;
+      color: #64c8ff;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .post-time {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.4);
+      white-space: nowrap;
+    }
+
+    .post-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .post-author {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 8px;
+    }
+
+    .post-stats {
+      display: flex;
+      gap: 15px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .post-stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(100, 200, 255, 0.2);
+      border-top-color: #64c8ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      padding: 20px;
+      color: #ff6b9d;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      body {
+        overflow-y: auto;
+      }
+
+      .container {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .header {
+        padding: 15px;
+      }
+
+      .header h1 {
+        font-size: 16px;
+      }
+
+      .status-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 10px;
+      }
+
+      .main-content {
+        grid-template-columns: 1fr;
+        overflow-y: visible;
+        display: block;
+      }
+
+      .thread-column {
+        min-height: 60vh;
+        border-bottom: 3px solid rgba(100, 200, 255, 0.3);
+      }
+
+      .thread-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .post {
+        margin-bottom: 12px;
+        padding: 12px;
+      }
+
+      .post-title {
+        font-size: 13px;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(100, 200, 255, 0.05);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 200, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 200, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📡 OSINT Observer</h1>
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-dot"></div>
+          <span>Reddit Live (JSON + RSS Fallback)</span>
+        </div>
+        <div class="status-item">
+          <span>Updates every 5 minutes</span>
+        </div>
+        <div class="status-item">
+          <span id="global-last-update">Last updated: Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Military Space Thread -->
+      <div class="thread-column">
+        <div class="thread-header">
+          <div class="thread-title">🚀 Military Space News</div>
+          <div class="thread-meta">
+            <span id="military-last-update">Updating...</span>
+          </div>
+        </div>
+        <div class="thread-feed" id="military-feed">
+          <div class="loading">
+            <div class="spinner"></div>
+            <div>Loading military space news...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle East OSINT Thread -->
+      <div class="thread-column">
+        <div class="thread-header">
+          <div class="thread-title">🌍 Middle East OSINT</div>
+          <div class="thread-meta">
+            <span id="mideast-last-update">Updating...</span>
+          </div>
+        </div>
+        <div class="thread-feed" id="mideast-feed">
+          <div class="loading">
+            <div class="spinner"></div>
+            <div>Loading Middle East intelligence...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Space Science Thread -->
+      <div class="thread-column">
+        <div class="thread-header">
+          <div class="thread-title">🔬 Space Science & Engineering</div>
+          <div class="thread-meta">
+            <span id="science-last-update">Updating...</span>
+          </div>
+        </div>
+        <div class="thread-feed" id="science-feed">
+          <div class="loading">
+            <div class="spinner"></div>
+            <div>Loading space science news...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Reddit subreddits for each thread
+    const THREADS = {
+      military: {
+        subreddits: ['SpaceForce', 'Military', 'Defense', 'CredibleDefense', 'LessCredibleDefence'],
+        keywords: ['space', 'satellite', 'orbital', 'missile', 'rocket'],
+        feedId: 'military-feed',
+        updateId: 'military-last-update'
+      },
+      mideast: {
+        subreddits: ['OSINT', 'geopolitics', 'Israel', 'worldnews', 'intelligence'],
+        keywords: ['israel', 'middle east', 'gaza', 'iran', 'idf', 'hezbollah', 'hamas'],
+        feedId: 'mideast-feed',
+        updateId: 'mideast-last-update'
+      },
+      science: {
+        subreddits: ['space', 'SpaceX', 'nasa', 'astronomy', 'Spaceflight', 'astrophysics'],
+        keywords: [],
+        feedId: 'science-feed',
+        updateId: 'science-last-update'
+      }
+    };
+
+    // Format time ago
+    function timeAgo(timestamp) {
+      const now = Date.now() / 1000;
+      const diff = now - timestamp;
+      
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    // Format number (1234 -> 1.2k)
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+      return num.toString();
+    }
+
+    // Fetch posts - try JSON first, fall back to RSS on CORS errors
+    async function fetchThreadPosts(thread) {
+      const allPosts = [];
+      
+      for (const subreddit of thread.subreddits) {
+        try {
+          // Try JSON API first (works on desktop, has accurate scores)
+          try {
+            const response = await fetch(`https://www.reddit.com/r/${subreddit}/hot.json?limit=20`);
+            const data = await response.json();
+            
+            if (data.data && data.data.children) {
+              const posts = data.data.children
+                .map(child => child.data)
+                .filter(post => {
+                  // Filter by keywords if specified
+                  if (thread.keywords.length === 0) return true;
+                  
+                  const text = (post.title + ' ' + (post.selftext || '')).toLowerCase();
+                  return thread.keywords.some(keyword => text.includes(keyword.toLowerCase()));
+                });
+              
+              allPosts.push(...posts);
+              continue; // Success, move to next subreddit
+            }
+          } catch (jsonError) {
+            // JSON failed (likely CORS), try RSS fallback
+            console.log(`${subreddit}: JSON failed, trying RSS...`);
+          }
+          
+          // RSS Fallback for mobile CORS issues
+          const rssResponse = await fetch(`https://www.reddit.com/r/${subreddit}/hot/.rss`);
+          const rssText = await rssResponse.text();
+          
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(rssText, 'text/xml');
+          const items = xmlDoc.querySelectorAll('entry');
+          
+          items.forEach(item => {
+            const title = item.querySelector('title')?.textContent || '';
+            const link = item.querySelector('link')?.getAttribute('href') || '';
+            const author = item.querySelector('author name')?.textContent || 'unknown';
+            const updated = item.querySelector('updated')?.textContent || '';
+            const content = item.querySelector('content')?.textContent || '';
+            
+            if (!title) return;
+            
+            // Extract score and comments
+            let score = 0;
+            let num_comments = 0;
+            const scoreMatch = content.match(/(\d+)\s+points?/i);
+            const commentsMatch = content.match(/(\d+)\s+comments?/i);
+            if (scoreMatch) score = parseInt(scoreMatch[1]);
+            if (commentsMatch) num_comments = parseInt(commentsMatch[1]);
+            
+            // Filter by keywords
+            if (thread.keywords.length > 0) {
+              const text = (title + ' ' + content).toLowerCase();
+              const hasKeyword = thread.keywords.some(keyword => text.includes(keyword.toLowerCase()));
+              if (!hasKeyword) return;
+            }
+            
+            allPosts.push({
+              title,
+              permalink: link.replace('https://www.reddit.com', '').replace('https://old.reddit.com', ''),
+              author: author.replace('/u/', '').replace('u/', ''),
+              score,
+              num_comments,
+              created_utc: new Date(updated).getTime() / 1000,
+              subreddit
+            });
+          });
+          
+        } catch (error) {
+          console.error(`Error fetching ${subreddit}:`, error);
+        }
+      }
+      
+      // Sort by score (if available) or timestamp
+      allPosts.sort((a, b) => {
+        if (a.score && b.score) return b.score - a.score;
+        return b.created_utc - a.created_utc;
+      });
+      
+      return allPosts.slice(0, 15);
+    }
+
+    // Render posts to feed
+    function renderPosts(posts, feedId) {
+      const feed = document.getElementById(feedId);
+      
+      if (posts.length === 0) {
+        feed.innerHTML = '<div class="error">No posts found</div>';
+        return;
+      }
+      
+      feed.innerHTML = posts.map(post => `
+        <div class="post" onclick="window.open('https://reddit.com${post.permalink}', '_blank')">
+          <div class="post-header">
+            <div class="post-subreddit">r/${post.subreddit}</div>
+            <div class="post-time">${timeAgo(post.created_utc)}</div>
+          </div>
+          <div class="post-title">${post.title}</div>
+          <div class="post-author">u/${post.author}</div>
+          <div class="post-stats">
+            <div class="post-stat">
+              <span>⬆</span>
+              <span>${formatNumber(post.score)}</span>
+            </div>
+            <div class="post-stat">
+              <span>💬</span>
+              <span>${formatNumber(post.num_comments)}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Update a single thread
+    async function updateThread(threadKey) {
+      const thread = THREADS[threadKey];
+      const updateElement = document.getElementById(thread.updateId);
+      
+      try {
+        updateElement.textContent = 'Updating...';
+        
+        const posts = await fetchThreadPosts(thread);
+        renderPosts(posts, thread.feedId);
+        
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { 
+          hour12: false, 
+          hour: '2-digit', 
+          minute: '2-digit'
+        });
+        updateElement.textContent = `Last updated: ${timeStr}`;
+        
+      } catch (error) {
+        console.error(`Error updating ${threadKey}:`, error);
+        document.getElementById(thread.feedId).innerHTML = 
+          '<div class="error">Failed to load posts</div>';
+      }
+    }
+
+    // Update all threads
+    async function updateAllThreads() {
+      const promises = Object.keys(THREADS).map(key => updateThread(key));
+      await Promise.all(promises);
+      
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      document.getElementById('global-last-update').textContent = `Last updated: ${timeStr}`;
+    }
+
+    // Initialize
+    updateAllThreads();
+
+    // Make updateThread available globally
+    window.updateThread = updateThread;
+
+    // Update every 5 minutes
+    setInterval(updateAllThreads, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
