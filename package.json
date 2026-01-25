@@ -1,0 +1,12 @@
+{
+  "name": "situation-room-website",
+  "version": "1.0.0",
+  "description": "Situation Room Intelligence Dashboard - Website Version",
+  "scripts": {
+    "start": "npx http-server . -p 8080 -o",
+    "dev": "npx http-server . -p 8080 -o -c-1"
+  },
+  "keywords": ["satellite", "osint", "intelligence", "dashboard"],
+  "author": "",
+  "license": "MIT"
+}

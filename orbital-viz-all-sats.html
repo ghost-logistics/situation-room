@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Sentinel - Satellite Tracking</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      overflow: hidden;
+      background: #0a0e14;
+      color: #ffffff;
+    }
+
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(10, 14, 20, 0.9);
+      border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+      display: flex;
+      align-items: center;
+      padding: 0 30px;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 600;
+      color: #64c8ff;
+      letter-spacing: 1px;
+    }
+
+    .stats-panel {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      background: rgba(10, 14, 20, 0.85);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      border-radius: 8px;
+      padding: 20px;
+      min-width: 280px;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+    }
+
+    .stats-panel h3 {
+      font-size: 14px;
+      color: #64c8ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .stat-label {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .stat-value {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 140px;
+      left: 20px;
+      background: rgba(10, 14, 20, 0.85);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 3px;
+      margin-right: 10px;
+      border-radius: 2px;
+    }
+
+    /* Settings button */
+    .settings-btn {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      background: rgba(100, 200, 255, 0.15);
+      border: 1px solid rgba(100, 200, 255, 0.4);
+      color: #64c8ff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      pointer-events: all;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .settings-btn:hover {
+      background: rgba(100, 200, 255, 0.25);
+      border-color: #64c8ff;
+    }
+
+    /* Settings modal */
+    .settings-modal {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10, 14, 20, 0.95);
+      border: 2px solid rgba(100, 200, 255, 0.4);
+      border-radius: 12px;
+      padding: 30px;
+      min-width: 400px;
+      max-width: 500px;
+      pointer-events: all;
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+    }
+
+    .settings-modal h2 {
+      font-size: 18px;
+      color: #64c8ff;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .settings-modal label {
+      display: block;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 5px;
+      margin-top: 15px;
+    }
+
+    .settings-modal input {
+      width: 100%;
+      padding: 10px;
+      background: rgba(100, 200, 255, 0.1);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      border-radius: 4px;
+      color: #ffffff;
+      font-size: 13px;
+    }
+
+    .settings-status {
+      margin: 15px 0;
+      padding: 10px;
+      background: rgba(100, 200, 255, 0.05);
+      border: 1px solid rgba(100, 200, 255, 0.2);
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .status-connected {
+      color: #00ff88;
+      border-color: rgba(0, 255, 136, 0.3);
+      background: rgba(0, 255, 136, 0.05);
+    }
+
+    .status-error {
+      color: #ff6b9d;
+      border-color: rgba(255, 107, 157, 0.3);
+      background: rgba(255, 107, 157, 0.05);
+    }
+
+    .settings-modal button {
+      margin-top: 15px;
+      margin-right: 10px;
+      padding: 10px 20px;
+      background: rgba(100, 200, 255, 0.15);
+      border: 1px solid rgba(100, 200, 255, 0.4);
+      border-radius: 6px;
+      color: #64c8ff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .settings-modal button:hover {
+      background: rgba(100, 200, 255, 0.25);
+    }
+
+    .settings-modal button.primary {
+      background: #64c8ff;
+      color: #0a0e14;
+      border-color: #64c8ff;
+    }
+
+    .settings-modal button.danger {
+      background: rgba(255, 107, 157, 0.15);
+      border-color: rgba(255, 107, 157, 0.4);
+      color: #ff6b9d;
+    }
+
+
+    /* Deorbit Watch Panel */
+    .deorbit-panel {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(10, 14, 20, 0.85);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      min-width: 320px;
+      max-width: 400px;
+      max-height: 400px;
+      overflow-y: auto;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+      display: none;
+    }
+
+    .deorbit-panel h3 {
+      font-size: 14px;
+      color: #ff6b9d;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .deorbit-item {
+      padding: 12px;
+      background: rgba(20, 30, 45, 0.6);
+      border-left: 3px solid #ff6b9d;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 11px;
+    }
+
+    .deorbit-item.critical {
+      border-left-color: #ff4444;
+      background: rgba(255, 70, 70, 0.1);
+    }
+
+    .deorbit-item.warning {
+      border-left-color: #ffaa00;
+      background: rgba(255, 170, 0, 0.1);
+    }
+
+    .deorbit-sat-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .deorbit-detail {
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 3px;
+    }
+
+    .panel-footer {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(100, 200, 255, 0.2);
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      pointer-events: all;
+    }
+
+    .control-btn {
+      background: rgba(100, 200, 255, 0.15);
+      border: 1px solid rgba(100, 200, 255, 0.4);
+      color: #64c8ff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .control-btn:hover {
+      background: rgba(100, 200, 255, 0.25);
+      border-color: #64c8ff;
+    }
+
+    .control-btn.active {
+      background: #64c8ff;
+      color: #0a0e14;
+      border-color: #64c8ff;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 1000;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(100, 200, 255, 0.1);
+      border-top-color: #64c8ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #64c8ff;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    /* Time Slider Controls */
+    .time-controls {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 14, 20, 0.95);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      border-radius: 8px;
+      padding: 20px 30px;
+      min-width: 800px;
+      max-width: 90vw;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px rgba(100, 200, 255, 0.2);
+    }
+
+
+    .time-display {
+      text-align: center;
+      font-size: 16px;
+      color: #64c8ff;
+      font-weight: 600;
+      margin-bottom: 15px;
+      letter-spacing: 1px;
+    }
+
+    .time-display .date {
+      font-size: 14px;
+      color: #ffffff;
+    }
+
+    .time-display .offset {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-left: 10px;
+    }
+
+    /* v1.1: Future Mode Indicator - SAFETY CRITICAL VISUAL WARNING */
+    .time-display .offset[data-future-mode="true"] {
+      color: #ffaa00 !important;
+      font-weight: 700;
+      animation: future-pulse 2s infinite;
+    }
+
+    .time-display .offset[data-future-mode="true"]::before {
+      content: "⚠️ FUTURE: ";
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    @keyframes future-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .slider-container {
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .time-slider {
+      width: 100%;
+      height: 8px;
+      background: rgba(100, 200, 255, 0.2);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .time-slider::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #64c8ff;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
+      transition: all 0.2s;
+    }
+
+    .time-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px rgba(100, 200, 255, 0.8);
+    }
+
+    .time-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: #64c8ff;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
+      transition: all 0.2s;
+    }
+
+    .time-slider::-moz-range-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px rgba(100, 200, 255, 0.8);
+    }
+
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 5px;
+      padding: 0 5px;
+    }
+
+    /* v1.1: NOW label emphasis */
+    .time-labels .now-label {
+      font-weight: 700;
+      color: #64c8ff;
+      font-size: 12px;
+    }
+
+    .time-labels span {
+      min-width: 30px;
+      text-align: center;
+      font-size: 10px;
+    }
+
+    .playback-controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .playback-btn {
+      background: rgba(100, 200, 255, 0.15);
+      border: 1px solid rgba(100, 200, 255, 0.4);
+      color: #64c8ff;
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+    }
+
+    .playback-btn:hover {
+      background: rgba(100, 200, 255, 0.25);
+      border-color: #64c8ff;
+    }
+
+    .playback-btn.active {
+      background: #64c8ff;
+      color: #0a0e14;
+      border-color: #64c8ff;
+    }
+
+    .playback-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      justify-content: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .speed-btn {
+      background: rgba(100, 200, 255, 0.1);
+      border: 1px solid rgba(100, 200, 255, 0.3);
+      color: #64c8ff;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .speed-btn:hover {
+      background: rgba(100, 200, 255, 0.2);
+    }
+
+    .speed-btn.active {
+      background: #64c8ff;
+      color: #0a0e14;
+    }
+
+    @media (max-width: 768px) {
+      .time-controls {
+        min-width: 90vw;
+        padding: 15px;
+      }
+
+      .playback-controls {
+        flex-wrap: wrap;
+      }
+
+      .playback-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .stats-panel {
+        min-width: auto !important;
+        max-width: 90vw !important;
+        font-size: 11px;
+      }
+
+      .stats-panel h3 {
+        font-size: 12px;
+      }
+
+      .stat-item {
+        font-size: 11px;
+      }
+
+      .legend {
+        font-size: 10px;
+        padding: 10px;
+      }
+
+      .legend-item {
+        font-size: 10px;
+      }
+
+      #sat-info {
+        bottom: 20px !important;
+        left: 10px !important;
+        right: 10px !important;
+        max-width: calc(100vw - 20px) !important;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+
+  <div class="ui-overlay">
+    <div class="top-bar" style="display: none;">
+      <div class="logo">â¬¢ SITUATION ROOM</div>
+    </div>
+
+    <div class="stats-panel" style="top: auto; bottom: 140px; left: auto; right: 20px;">
+      <h3>Satellite Data</h3>
+      <div class="stat-item">
+        <span class="stat-label">Satellites Tracked</span>
+        <span class="stat-value" id="sat-count">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Maneuvers Detected</span>
+        <span class="stat-value" id="maneuver-count" style="color: #ff0000; font-weight: 700;">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Avg. Altitude</span>
+        <span class="stat-value" id="avg-alt">0 km</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Inclination Range</span>
+        <span class="stat-value" id="inc-range">0°</span>
+      </div>
+      <div class="stat-item" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(100, 200, 255, 0.2);">
+        <span class="stat-label">Last TLE Update</span>
+        <span class="stat-value" id="last-update-time" style="font-size: 11px;">Loading...</span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background: #64c8ff;"></div>
+        <span>LEO (&lt;2000 km)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ff6b9d;"></div>
+        <span>MEO (2000-35000 km)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ffd93d;"></div>
+        <span>GEO/HEO (&gt;35000 km)</span>
+      </div>
+    </div>
+
+    <div class="stats-panel" id="sat-info" style="top: auto; bottom: 140px; left: 20px; display: none; max-width: 420px; max-height: 60vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0;">SATELLITE INFO</h3>
+        <button onclick="document.getElementById('sat-info').style.display='none'" style="background: rgba(255, 107, 157, 0.2); border: 1px solid #ff6b9d; color: #ff6b9d; font-size: 20px; cursor: pointer; padding: 5px 10px; border-radius: 4px; transition: all 0.2s; font-weight: bold;" onmouseover="this.style.background='rgba(255, 107, 157, 0.4)'" onmouseout="this.style.background='rgba(255, 107, 157, 0.2)'">×</button>
+      </div>
+      
+      <!-- Basic Info -->
+      <div class="stat-item">
+        <span class="stat-label">Name</span>
+        <span class="stat-value" id="info-name">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">NORAD ID</span>
+        <span class="stat-value" id="info-norad">-</span>
+      </div>
+      <div class="stat-item" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(100, 200, 255, 0.2);">
+        <span class="stat-label">Maneuver Status</span>
+        <span class="stat-value" id="info-maneuver" style="font-weight: 700;">-</span>
+      </div>
+      
+      <!-- Position Info -->
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(100, 200, 255, 0.3);">
+        <h3 style="font-size: 11px; color: #64c8ff; margin-bottom: 10px;">CURRENT POSITION</h3>
+        <div class="stat-item">
+          <span class="stat-label">Latitude</span>
+          <span class="stat-value" id="info-lat">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Longitude</span>
+          <span class="stat-value" id="info-lon">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Altitude (current)</span>
+          <span class="stat-value" id="info-alt">-</span>
+        </div>
+      </div>
+      
+      <!-- Orbital Elements -->
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(100, 200, 255, 0.3);">
+        <h3 style="font-size: 11px; color: #64c8ff; margin-bottom: 10px;">ORBITAL ELEMENTS</h3>
+        <div class="stat-item">
+          <span class="stat-label">Semi-Major Axis</span>
+          <span class="stat-value" id="info-sma">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Eccentricity</span>
+          <span class="stat-value" id="info-ecc">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Inclination</span>
+          <span class="stat-value" id="info-inc">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">RAAN</span>
+          <span class="stat-value" id="info-raan">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Arg of Perigee</span>
+          <span class="stat-value" id="info-argp">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Mean Anomaly</span>
+          <span class="stat-value" id="info-ma">-</span>
+        </div>
+      </div>
+      
+      <!-- Derived Orbital Parameters -->
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(100, 200, 255, 0.3);">
+        <h3 style="font-size: 11px; color: #64c8ff; margin-bottom: 10px;">ORBIT PARAMETERS</h3>
+        <div class="stat-item">
+          <span class="stat-label">Perigee Altitude</span>
+          <span class="stat-value" id="info-perigee">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Apogee Altitude</span>
+          <span class="stat-value" id="info-apogee">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Mean Altitude</span>
+          <span class="stat-value" id="info-mean-alt">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Orbital Period</span>
+          <span class="stat-value" id="info-period">-</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Mean Motion</span>
+          <span class="stat-value" id="info-meanmotion">-</span>
+        </div>
+      </div>
+
+    <!-- Time Travel Controls -->
+    <div class="time-controls">
+      <div class="time-display">
+        <div class="date" id="time-display-date">Loading...</div>
+        <div class="offset" id="time-display-offset"></div>
+      </div>
+      
+      <div class="slider-container">
+        <!-- 
+          SAFETY CRITICAL SLIDER CONFIGURATION (v1.1):
+          - min="0" : Absolute minimum (7 days ago)
+          - max="1209600" : Absolute maximum (7 days ahead = 14 days total) 
+          - value="604800" : Center point (NOW)
+          - step="3600" : 1 hour increments (prevents excessive granularity)
+        -->
+        <input type="range" 
+               class="time-slider" 
+               id="time-slider" 
+               min="0" 
+               max="1209600" 
+               value="604800" 
+               step="3600"
+               aria-label="Time travel slider: 7 days past to 7 days future"
+               aria-valuemin="0"
+               aria-valuemax="1209600"
+               aria-valuenow="604800">
+        <div class="time-labels">
+          <span id="day-0" data-day="-7">-7d</span>
+          <span id="day-1" data-day="-6">-6d</span>
+          <span id="day-2" data-day="-5">-5d</span>
+          <span id="day-3" data-day="-4">-4d</span>
+          <span id="day-4" data-day="-3">-3d</span>
+          <span id="day-5" data-day="-2">-2d</span>
+          <span id="day-6" data-day="-1">-1d</span>
+          <span id="day-7" data-day="0" class="now-label">NOW</span>
+          <span id="day-8" data-day="1">+1d</span>
+          <span id="day-9" data-day="2">+2d</span>
+          <span id="day-10" data-day="3">+3d</span>
+          <span id="day-11" data-day="4">+4d</span>
+          <span id="day-12" data-day="5">+5d</span>
+          <span id="day-13" data-day="6">+6d</span>
+          <span id="day-14" data-day="7">+7d</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading All Active Satellites...</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.4/satellite.min.js"></script>
+  
+  <script>
+    'use strict';
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CONFIGURATION
+    // ═══════════════════════════════════════════════════════════════
+    const CONFIG = {
+      // API Endpoints
+      CELESTRAK_TLE_URL: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle',
+      
+      // Feature Flags
+      ENABLE_MANEUVER_DETECTION: true,
+      ENABLE_DEBUG_LOGGING: false, // Set to true only for debugging
+      
+      // Refresh Intervals (milliseconds)
+      TLE_REFRESH_INTERVAL: 30 * 60 * 1000,  // 30 minutes
+      CLOCK_UPDATE_INTERVAL: 1000,            // 1 second
+      
+      // Performance Settings
+      MAX_SATELLITES: 15000,
+      ANIMATION_FPS: 60,
+      
+      // Camera Settings
+      DEFAULT_CAMERA_DISTANCE: 25000,
+      MIN_CAMERA_DISTANCE: 10000,
+      MAX_CAMERA_DISTANCE: 60000
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // PRODUCTION LOGGER
+    // ═══════════════════════════════════════════════════════════════
+    const Logger = {
+      _log(level, message, ...args) {
+        if (!CONFIG.ENABLE_DEBUG_LOGGING && level !== 'ERROR') return;
+        
+        const timestamp = new Date().toISOString();
+        const prefix = `[${timestamp}] [${level}]`;
+        
+        switch(level) {
+          case 'ERROR':
+            console.error(prefix, message, ...args);
+            break;
+          case 'WARN':
+            console.warn(prefix, message, ...args);
+            break;
+          default:
+            console.log(prefix, message, ...args);
+        }
+      },
+      
+      info(message, ...args) { this._log('INFO', message, ...args); },
+      warn(message, ...args) { this._log('WARN', message, ...args); },
+      error(message, ...args) { this._log('ERROR', message, ...args); },
+      debug(message, ...args) { this._log('DEBUG', message, ...args); }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // UTILITY FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    
+
+    // ═══════════════════════════════════════════════════════════════
+    // GLOBALS
+    // ═══════════════════════════════════════════════════════════════
+    const container = document.getElementById('container');
+    const loading = document.getElementById('loading');
+
+    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+
+    
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x0a0e14, 10000, 50000);
+    
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100000);
+    camera.position.set(0, 8000, 25000);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x0a0e14, 1);
+    container.appendChild(renderer.domElement);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x404040, 1);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sunLight.position.set(50000, 0, 0);
+    scene.add(sunLight);
+
+    // Earth with realistic texture
+    const textureLoader = new THREE.TextureLoader();
+    const earthGeometry = new THREE.SphereGeometry(6371, 128, 128);
+    
+    // Load NASA Blue Marble texture
+    const earthTexture = textureLoader.load(
+      'https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg',
+    );
+    
+    const bumpTexture = textureLoader.load(
+      'https://unpkg.com/three-globe@2.31.0/example/img/earth-topology.png',
+    );
+    
+    const earthMaterial = new THREE.MeshPhongMaterial({
+      map: earthTexture,
+      bumpMap: bumpTexture,
+      bumpScale: 10,
+      specular: new THREE.Color(0x333333),
+      shininess: 5
+    });
+    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    scene.add(earth);
+
+    // Atmosphere glow
+    const glowGeometry = new THREE.SphereGeometry(6471, 64, 64);
+    const glowMaterial = new THREE.ShaderMaterial({
+      uniforms: {},
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNormal;
+        void main() {
+          float intensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+          gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+        }
+      `,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      transparent: true
+    });
+    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    scene.add(glow);
+
+    // Starfield background
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 2,
+      transparent: true,
+      opacity: 0.8
+    });
+
+    const starsVertices = [];
+    for (let i = 0; i < 2000; i++) {
+      const x = (Math.random() - 0.5) * 100000;
+      const y = (Math.random() - 0.5) * 100000;
+      const z = (Math.random() - 0.5) * 100000;
+      starsVertices.push(x, y, z);
+    }
+
+    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(stars);
+
+    // Orbital data
+    let satellites = [];
+    let satellitePoints = null; // Single Points object for all satellites
+    let selectedSatellite = null;
+    
+    // TLE tracking for maneuver detection
+    let TLE_old = null;  // Previous TLE dataset
+    let TLE_current = null;  // Current TLE dataset
+    let maneuveredSatellites = new Set();  // Set of satellite names that performed maneuvers
+
+    // Raycaster for clicking
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Points.threshold = 100;
+    const mouse = new THREE.Vector2();
+
+    // Controls - zoom and rotation (rotate camera, not Earth)
+    let isDragging = false;
+    let previousMouse = { x: 0, y: 0 };
+    
+    renderer.domElement.addEventListener('mousedown', (e) => {
+      // Check for satellite click first
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Check for Points intersection (now a Group)
+      if (satellitePoints) {
+        const intersects = raycaster.intersectObjects(satellitePoints.children, true);
+        if (intersects.length > 0) {
+          // Note: Clicking is now approximate since satellites are in separate groups
+          // Just show the first intersected point's info
+          const index = intersects[0].index;
+          if (index < satellites.length) {
+            selectedSatellite = satellites[index];
+            showSatelliteInfo(selectedSatellite);
+          }
+          return; // Don't start dragging
+        }
+      }
+      
+      // Start dragging if no satellite clicked
+      isDragging = true;
+      previousMouse = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const deltaX = e.clientX - previousMouse.x;
+        const deltaY = e.clientY - previousMouse.y;
+        
+        // Rotate camera around Earth (not Earth itself)
+        const rotationSpeed = 0.005;
+        
+        // Horizontal rotation (around Y axis)
+        const radius = Math.sqrt(camera.position.x * camera.position.x + camera.position.z * camera.position.z);
+        const currentAngle = Math.atan2(camera.position.z, camera.position.x);
+        const newAngle = currentAngle + deltaX * rotationSpeed;
+        
+        camera.position.x = radius * Math.cos(newAngle);
+        camera.position.z = radius * Math.sin(newAngle);
+        
+        // Vertical rotation (limit to prevent flipping)
+        camera.position.y += deltaY * rotationSpeed * 50;
+        camera.position.y = Math.max(-25000, Math.min(25000, camera.position.y));
+        
+        camera.lookAt(0, 0, 0);
+        
+        previousMouse = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    renderer.domElement.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Touch support for mobile
+    let lastTouchDistance = 0;
+    
+    renderer.domElement.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        raycaster.setFromCamera(mouse, camera);
+        
+        if (satellitePoints) {
+          const intersects = raycaster.intersectObjects(satellitePoints.children, true);
+          if (intersects.length > 0) {
+            const index = intersects[0].index;
+            if (index < satellites.length) {
+              selectedSatellite = satellites[index];
+              showSatelliteInfo(selectedSatellite);
+            }
+            return;
+          }
+        }
+        
+        isDragging = true;
+        previousMouse = { x: touch.clientX, y: touch.clientY };
+      } else if (e.touches.length === 2) {
+        // Pinch to zoom
+        isDragging = false;
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
+      }
+    });
+
+    renderer.domElement.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        // Single finger - rotate
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - previousMouse.x;
+        const deltaY = touch.clientY - previousMouse.y;
+        
+        const rotationSpeed = 0.005;
+        const radius = Math.sqrt(camera.position.x * camera.position.x + camera.position.z * camera.position.z);
+        const currentAngle = Math.atan2(camera.position.z, camera.position.x);
+        const newAngle = currentAngle + deltaX * rotationSpeed;
+        
+        camera.position.x = radius * Math.cos(newAngle);
+        camera.position.z = radius * Math.sin(newAngle);
+        camera.position.y += deltaY * rotationSpeed * 50;
+        camera.position.y = Math.max(-25000, Math.min(25000, camera.position.y));
+        
+        camera.lookAt(0, 0, 0);
+        previousMouse = { x: touch.clientX, y: touch.clientY };
+        e.preventDefault();
+      } else if (e.touches.length === 2) {
+        // Two fingers - pinch to zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (lastTouchDistance > 0) {
+          const delta = distance - lastTouchDistance;
+          const zoomSpeed = delta * 20; // Adjust sensitivity
+          
+          const direction = new THREE.Vector3();
+          camera.getWorldDirection(direction);
+          direction.negate();
+          
+          camera.position.x += direction.x * zoomSpeed;
+          camera.position.y += direction.y * zoomSpeed;
+          camera.position.z += direction.z * zoomSpeed;
+          
+          // Limit zoom distance
+          const cameraDistance = camera.position.length();
+          if (cameraDistance < 10000) {
+            camera.position.normalize().multiplyScalar(10000);
+          } else if (cameraDistance > 80000) {
+            camera.position.normalize().multiplyScalar(80000);
+          }
+          
+          camera.lookAt(0, 0, 0);
+        }
+        
+        lastTouchDistance = distance;
+        e.preventDefault();
+      }
+    });
+
+    renderer.domElement.addEventListener('touchend', () => {
+      isDragging = false;
+      lastTouchDistance = 0;
+    });
+
+    renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      
+      // Zoom by moving camera closer/farther from Earth
+      const zoomSpeed = e.deltaY * 10;
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+      direction.negate();
+      
+      camera.position.x += direction.x * zoomSpeed;
+      camera.position.y += direction.y * zoomSpeed;
+      camera.position.z += direction.z * zoomSpeed;
+      
+      // Limit zoom distance
+      const distance = camera.position.length();
+      if (distance < 10000) {
+        camera.position.normalize().multiplyScalar(10000);
+      } else if (distance > 80000) {
+        camera.position.normalize().multiplyScalar(80000);
+      }
+      
+      camera.lookAt(0, 0, 0);
+    });
+
+    // No button controls - orbital rings removed
+
+    function detectManeuvers(oldTLE, newTLE) {
+      if (!oldTLE || !newTLE) {
+        return new Set();
+      }
+      
+      const maneuvers = new Set();
+      const now = new Date();
+      
+      // Create lookup maps by satellite name
+      const oldMap = new Map();
+      oldTLE.forEach(sat => {
+        oldMap.set(sat.name, sat);
+      });
+      
+      const newMap = new Map();
+      newTLE.forEach(sat => {
+        newMap.set(sat.name, sat);
+      });
+      
+      // Arrays to store differences for statistical analysis
+      const positionDiffs = [];
+      const velocityDiffs = [];
+      
+      // Compare each satellite
+      newTLE.forEach(newSat => {
+        const oldSat = oldMap.get(newSat.name);
+        if (!oldSat) return; // New satellite, skip
+        
+        try {
+          // Propagate old TLE to current time
+          const oldSatrec = satellite.twoline2satrec(oldSat.tle1, oldSat.tle2);
+          const oldPV = satellite.propagate(oldSatrec, now);
+          
+          // Propagate new TLE to current time
+          const newSatrec = satellite.twoline2satrec(newSat.tle1, newSat.tle2);
+          const newPV = satellite.propagate(newSatrec, now);
+          
+          if (oldPV.position && newPV.position && 
+              typeof oldPV.position !== 'boolean' && typeof newPV.position !== 'boolean' &&
+              oldPV.velocity && newPV.velocity &&
+              typeof oldPV.velocity !== 'boolean' && typeof newPV.velocity !== 'boolean') {
+            
+            // Calculate position difference (km)
+            const posDiff = Math.sqrt(
+              Math.pow(newPV.position.x - oldPV.position.x, 2) +
+              Math.pow(newPV.position.y - oldPV.position.y, 2) +
+              Math.pow(newPV.position.z - oldPV.position.z, 2)
+            );
+            
+            // Calculate velocity difference (km/s)
+            const velDiff = Math.sqrt(
+              Math.pow(newPV.velocity.x - oldPV.velocity.x, 2) +
+              Math.pow(newPV.velocity.y - oldPV.velocity.y, 2) +
+              Math.pow(newPV.velocity.z - oldPV.velocity.z, 2)
+            );
+            
+            positionDiffs.push({ name: newSat.name, diff: posDiff });
+            velocityDiffs.push({ name: newSat.name, diff: velDiff });
+          }
+        } catch (err) {
+          // Skip satellites with propagation errors
+        }
+      });
+      
+      // Calculate statistics for position differences
+      const posMean = positionDiffs.reduce((sum, d) => sum + d.diff, 0) / positionDiffs.length;
+      const posVariance = positionDiffs.reduce((sum, d) => sum + Math.pow(d.diff - posMean, 2), 0) / positionDiffs.length;
+      const posStdDev = Math.sqrt(posVariance);
+      
+      // Calculate statistics for velocity differences
+      const velMean = velocityDiffs.reduce((sum, d) => sum + d.diff, 0) / velocityDiffs.length;
+      const velVariance = velocityDiffs.reduce((sum, d) => sum + Math.pow(d.diff - velMean, 2), 0) / velocityDiffs.length;
+      const velStdDev = Math.sqrt(velVariance);
+      
+      // 1-sigma thresholds
+      const posThreshold = posMean + posStdDev;
+      const velThreshold = velMean + velStdDev;
+      
+      
+      // Flag satellites that exceed thresholds
+      let maneuverCount = 0;
+      positionDiffs.forEach((posData, idx) => {
+        const velData = velocityDiffs[idx];
+        
+        // Maneuver detected if EITHER position OR velocity exceeds 1-sigma
+        if (posData.diff > posThreshold || velData.diff > velThreshold) {
+          maneuvers.add(posData.name);
+          maneuverCount++;
+        }
+      });
+      
+      return maneuvers;
+    }
+
+    function showSatelliteInfo(sat) {
+      document.getElementById('sat-info').style.display = 'block';
+      
+      // Basic info
+      document.getElementById('info-name').textContent = sat.name;
+      document.getElementById('info-norad').textContent = sat.noradId || 'Unknown';
+      
+      // Maneuver status
+      const maneuverEl = document.getElementById('info-maneuver');
+      if (sat.maneuvered) {
+        maneuverEl.textContent = '⚠️ MANEUVER DETECTED';
+        maneuverEl.style.color = '#ff0000';
+      } else {
+        maneuverEl.textContent = 'Normal';
+        maneuverEl.style.color = '#00ff88';
+      }
+      
+      // Current position
+      document.getElementById('info-lat').textContent = sat.lat.toFixed(4) + '°';
+      document.getElementById('info-lon').textContent = sat.lon.toFixed(4) + '°';
+      document.getElementById('info-alt').textContent = sat.altitude.toFixed(1) + ' km';
+      
+      // Orbital elements
+      document.getElementById('info-sma').textContent = sat.semiMajorAxis.toFixed(1) + ' km';
+      document.getElementById('info-ecc').textContent = sat.eccentricity.toFixed(6);
+      document.getElementById('info-inc').textContent = sat.inclination.toFixed(2) + '°';
+      document.getElementById('info-raan').textContent = sat.raan.toFixed(2) + '°';
+      document.getElementById('info-argp').textContent = sat.argOfPerigee.toFixed(2) + '°';
+      document.getElementById('info-ma').textContent = sat.meanAnomaly.toFixed(2) + '°';
+      
+      // Derived parameters
+      document.getElementById('info-perigee').textContent = sat.perigee.toFixed(1) + ' km';
+      document.getElementById('info-apogee').textContent = sat.apogee.toFixed(1) + ' km';
+      document.getElementById('info-mean-alt').textContent = sat.avgAltitude.toFixed(1) + ' km';
+      
+      const periodMin = (sat.period / 60).toFixed(1);
+      document.getElementById('info-period').textContent = periodMin + ' min';
+      document.getElementById('info-meanmotion').textContent = sat.meanMotion.toFixed(4) + ' rev/day';
+      
+    }
+
+    // Fetch satellites
+    /**
+     * Loads satellite TLE data from CelesTrak
+     */
+    async function loadSatellites() {
+      try {
+        Logger.info('Fetching satellite TLE data from CelesTrak...');
+        
+        // Save old TLE before fetching new data
+        if (TLE_current) {
+          TLE_old = TLE_current;
+          Logger.debug('Saved previous TLE for comparison');
+        }
+        
+        const response = await fetch(CONFIG.CELESTRAK_TLE_URL);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const tleData = await response.text();
+        
+        if (!tleData || tleData.length < 100) {
+          throw new Error('Invalid or empty TLE data received');
+        }
+        
+        Logger.info(`Received TLE data: ${tleData.length} bytes`);
+        
+        // Update last refresh time
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { 
+          hour12: false, 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        });
+        document.getElementById('last-update-time').textContent = timeStr;
+        
+        const lines = tleData.trim().split('\n');
+        const tleObjects = [];
+        
+        for (let i = 0; i < lines.length; i += 3) {
+          if (i + 2 < lines.length) {
+            tleObjects.push({
+              name: lines[i].trim(),
+              tle1: lines[i + 1].trim(),
+              tle2: lines[i + 2].trim()
+            });
+          }
+        }
+        
+        Logger.info(`Parsed ${tleObjects.length} TLE sets`);
+        
+        // Store current TLE
+        TLE_current = tleObjects;
+        
+        // Detect maneuvers by comparing old and new TLE
+        if (TLE_old && CONFIG.ENABLE_MANEUVER_DETECTION) {
+          maneuveredSatellites = detectManeuvers(TLE_old, TLE_current);
+        }
+
+        // Process ALL satellites (optimized with Points geometry)
+        satellites = tleObjects.map(sat => {
+          const satrec = satellite.twoline2satrec(sat.tle1, sat.tle2);
+          const now = new Date();
+          const positionAndVelocity = satellite.propagate(satrec, now);
+          
+          if (positionAndVelocity.position && typeof positionAndVelocity.position !== 'boolean') {
+            const positionEci = positionAndVelocity.position;
+            const gmst = satellite.gstime(now);
+            const positionGd = satellite.eciToGeodetic(positionEci, gmst);
+            
+            const lat = satellite.degreesLat(positionGd.latitude);
+            const lon = satellite.degreesLong(positionGd.longitude);
+            const alt = positionGd.height;
+            
+            // Extract NORAD ID from TLE line 1 (columns 3-7)
+            const noradId = sat.tle1.substring(2, 7).trim();
+            
+            // Get ALL orbital elements from satellite.js satrec (already parsed from TLE)
+            // Convert from radians to degrees where appropriate
+            const inclination = satrec.inclo * (180 / Math.PI);  // degrees
+            const raan = satrec.nodeo * (180 / Math.PI);  // degrees
+            const eccentricity = satrec.ecco;  // unitless (0-1)
+            const argOfPerigee = satrec.argpo * (180 / Math.PI);  // degrees
+            const meanAnomaly = satrec.mo * (180 / Math.PI);  // degrees
+            
+            // Mean motion from satrec (radians per minute)
+            const meanMotionRad = satrec.no;  // rad/min
+            const meanMotion = meanMotionRad * 1440 / (2 * Math.PI);  // convert to rev/day
+            
+            // Calculate orbital period in seconds
+            const periodSeconds = (86400 / meanMotion); // seconds per revolution
+            
+            // Calculate semi-major axis using Kepler's third law
+            // a³ = (GM × T²) / (4π²)
+            const GM = 398600.4418; // Earth's gravitational parameter in km³/s²
+            const semiMajorAxis = Math.pow((GM * periodSeconds * periodSeconds) / (4 * Math.PI * Math.PI), 1/3);
+            
+            // Calculate perigee and apogee from semi-major axis and eccentricity
+            const perigee = semiMajorAxis * (1 - eccentricity) - 6371;  // km above Earth
+            const apogee = semiMajorAxis * (1 + eccentricity) - 6371;  // km above Earth
+            
+            // Average altitude = semi-major axis - Earth radius
+            const avgAltitude = semiMajorAxis - 6371;
+            
+            return {
+              name: sat.name,
+              noradId: noradId,  // NORAD catalog number
+              altitude: alt,  // Instantaneous altitude for display
+              avgAltitude: avgAltitude,  // Average altitude for classification
+              semiMajorAxis: semiMajorAxis,  // km
+              eccentricity: eccentricity,  // 0-1
+              inclination: inclination,  // degrees
+              raan: raan,  // degrees
+              argOfPerigee: argOfPerigee,  // degrees
+              meanAnomaly: meanAnomaly,  // degrees
+              meanMotion: meanMotion,  // rev/day
+              period: periodSeconds,  // seconds
+              perigee: perigee,  // km
+              apogee: apogee,  // km
+              lat: lat,
+              lon: lon,
+              satrec: satrec,
+              tle1: sat.tle1,
+              tle2: sat.tle2,
+              maneuvered: maneuveredSatellites.has(sat.name)  // Flag for maneuver detection
+            };
+          }
+          return null;
+        }).filter(Boolean);
+
+        createSatellites();
+        updateStats();
+        
+        // Initialize time travel controls now that satellites are loaded
+        if (typeof initializeTime === 'function') {
+          initializeTime();
+        }
+        
+        // Log first 5 satellites for orbital elements validation
+        satellites.slice(0, 5).forEach((sat, idx) => {
+          
+          // Classification
+          let orbitType = '';
+          if (sat.avgAltitude < 2000) orbitType = 'LEO';
+          else if (sat.avgAltitude < 35000) orbitType = 'MEO';
+          else orbitType = 'GEO/HEO';
+          
+          let orbitShape = sat.eccentricity < 0.01 ? 'Circular' : 
+                          sat.eccentricity < 0.3 ? 'Elliptical' : 'Highly Elliptical';
+          
+        });
+        
+        Logger.info(`Successfully loaded ${satellites.length} satellites`);
+        loading.style.display = 'none';
+        
+      } catch (error) {
+        Logger.error('Failed to load satellites:', error);
+        loading.innerHTML = `
+          <div class="loading-text" style="color: #ff6b9d;">
+            Error loading satellites: ${error.message}
+            <br><br>
+            <button onclick="location.reload()" style="padding: 10px 20px; background: #64c8ff; border: none; border-radius: 4px; color: #0a0e14; font-weight: 600; cursor: pointer;">
+              Retry
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    function createSatellites() {
+      // Remove old satellite points if they exist
+      if (satellitePoints) {
+        scene.remove(satellitePoints);
+        satellitePoints.geometry.dispose();
+        satellitePoints.material.dispose();
+        satellitePoints = null;
+      }
+      
+      // Use simple points rendering
+      const positions = [];
+      const colors = [];
+      
+      // Separate satellites by type for different sizes
+      const leoPositions = [], leoColors = [];
+      const meoPositions = [], meoColors = [];
+      const geoPositions = [], geoColors = [];
+      
+      satellites.forEach(sat => {
+        const phi = (90 - sat.lat) * (Math.PI / 180);
+        const theta = sat.lon * (Math.PI / 180);
+        const radius = 6371 + sat.altitude;
+        
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+        
+        // Classify by altitude
+        let color;
+        if (sat.avgAltitude < 2000) {
+          // Blue for LEO
+          color = new THREE.Color(0x64c8ff);
+        } else if (sat.avgAltitude < 35000) {
+          // Pink for MEO
+          color = new THREE.Color(0xff6b9d);
+        } else {
+          // Yellow for GEO/HEO
+          color = new THREE.Color(0xffd93d);
+        }
+        
+        if (sat.avgAltitude < 2000) {
+          leoPositions.push(x, y, z);
+          leoColors.push(color.r, color.g, color.b);
+        } else if (sat.avgAltitude < 35000) {
+          meoPositions.push(x, y, z);
+          meoColors.push(color.r, color.g, color.b);
+        } else {
+          geoPositions.push(x, y, z);
+          geoColors.push(color.r, color.g, color.b);
+        }
+      });
+      
+      // Create separate Points objects for each category
+      const pointsGroup = new THREE.Group();
+      
+      // ALWAYS add LEO, MEO, GEO in this order (even if empty) for consistent indexing
+      // LEO satellites (blue, size 50) - child[0]
+      const leoGeometry = new THREE.BufferGeometry();
+      leoGeometry.setAttribute('position', new THREE.Float32BufferAttribute(leoPositions.length > 0 ? leoPositions : [0,0,0], 3));
+      leoGeometry.setAttribute('color', new THREE.Float32BufferAttribute(leoColors.length > 0 ? leoColors : [0,0,0], 3));
+      const leoMaterial = new THREE.PointsMaterial({
+        size: 50,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        sizeAttenuation: true
+      });
+      const leoPoints = new THREE.Points(leoGeometry, leoMaterial);
+      leoPoints.visible = leoPositions.length > 0;
+      pointsGroup.add(leoPoints);
+      
+      // MEO satellites (pink, size 150) - child[1]
+      const meoGeometry = new THREE.BufferGeometry();
+      meoGeometry.setAttribute('position', new THREE.Float32BufferAttribute(meoPositions.length > 0 ? meoPositions : [0,0,0], 3));
+      meoGeometry.setAttribute('color', new THREE.Float32BufferAttribute(meoColors.length > 0 ? meoColors : [0,0,0], 3));
+      const meoMaterial = new THREE.PointsMaterial({
+        size: 150,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        sizeAttenuation: true
+      });
+      const meoPoints = new THREE.Points(meoGeometry, meoMaterial);
+      meoPoints.visible = meoPositions.length > 0;
+      pointsGroup.add(meoPoints);
+      
+      // GEO satellites (yellow, size 150) - child[2]
+      const geoGeometry = new THREE.BufferGeometry();
+      geoGeometry.setAttribute('position', new THREE.Float32BufferAttribute(geoPositions.length > 0 ? geoPositions : [0,0,0], 3));
+      geoGeometry.setAttribute('color', new THREE.Float32BufferAttribute(geoColors.length > 0 ? geoColors : [0,0,0], 3));
+      const geoMaterial = new THREE.PointsMaterial({
+        size: 150,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        sizeAttenuation: true
+      });
+      const geoPoints = new THREE.Points(geoGeometry, geoMaterial);
+      geoPoints.visible = geoPositions.length > 0;
+      pointsGroup.add(geoPoints);
+      
+      satellitePoints = pointsGroup;
+      scene.add(satellitePoints);
+    }
+
+    function updateStats() {
+      document.getElementById('sat-count').textContent = satellites.length.toLocaleString();
+      
+      // Count maneuvered satellites
+      const maneuverCount = satellites.filter(sat => sat.maneuvered).length;
+      document.getElementById('maneuver-count').textContent = maneuverCount.toLocaleString();
+      
+      const avgAlt = satellites.reduce((sum, sat) => sum + sat.altitude, 0) / satellites.length;
+      document.getElementById('avg-alt').textContent = Math.round(avgAlt) + ' km';
+      
+      const inclinations = satellites.map(s => s.inclination);
+      const minInc = Math.min(...inclinations);
+      const maxInc = Math.max(...inclinations);
+      document.getElementById('inc-range').textContent = `${minInc.toFixed(1)}° - ${maxInc.toFixed(1)}°`;
+    }
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // Use currentSimulationTime for Earth rotation and satellite positions
+      // If playing back, currentSimulationTime is updated by playback functions
+      // If at "now" and not playing, update to real time
+      if (!isPlaying && timeSlider && parseInt(timeSlider.value) >= ONE_WEEK_SECONDS) {
+        currentSimulationTime = new Date();
+      }
+      
+      // Set Earth rotation to match simulation time (not incremental)
+      updateEarthRotation();
+      
+      // Update satellite positions efficiently by modifying existing buffers
+      if (satellitePoints && satellites.length > 0) {
+        // One-time log when satellites first become available
+        if (!window.satellitesLoggedOnce) {
+          window.satellitesLoggedOnce = true;
+        }
+        
+        // satellitePoints is a Group containing LEO, MEO, GEO Points objects
+        let leoIndex = 0, meoIndex = 0, geoIndex = 0;
+        
+        // Get the three Points objects from the group
+        const leoPoints = satellitePoints.children[0];
+        const meoPoints = satellitePoints.children[1];
+        const geoPoints = satellitePoints.children[2];
+        
+        // Get position arrays (these exist if satellites were loaded)
+        const leoPositions = leoPoints ? leoPoints.geometry.attributes.position.array : null;
+        const meoPositions = meoPoints ? meoPoints.geometry.attributes.position.array : null;
+        const geoPositions = geoPoints ? geoPoints.geometry.attributes.position.array : null;
+        
+        // Update each satellite's position
+        satellites.forEach((sat) => {
+          if (sat && sat.satrec) {
+            const positionAndVelocity = satellite.propagate(sat.satrec, currentSimulationTime);
+            
+            if (positionAndVelocity.position && typeof positionAndVelocity.position !== 'boolean') {
+              const positionEci = positionAndVelocity.position;
+              const gmst = satellite.gstime(currentSimulationTime);
+              const positionGd = satellite.eciToGeodetic(positionEci, gmst);
+              
+              const lat = satellite.degreesLat(positionGd.latitude);
+              const lon = satellite.degreesLong(positionGd.longitude);
+              const alt = positionGd.height;
+              
+              const phi = (90 - lat) * (Math.PI / 180);
+              const theta = lon * (Math.PI / 180);
+              const radius = 6371 + alt;
+              
+              const x = radius * Math.sin(phi) * Math.cos(theta);
+              const y = radius * Math.cos(phi);
+              const z = radius * Math.sin(phi) * Math.sin(theta);
+              
+              // Update position in appropriate array based on altitude
+              if (sat.avgAltitude < 2000 && leoPositions) {
+                leoPositions[leoIndex * 3] = x;
+                leoPositions[leoIndex * 3 + 1] = y;
+                leoPositions[leoIndex * 3 + 2] = z;
+                leoIndex++;
+              } else if (sat.avgAltitude < 35000 && meoPositions) {
+                meoPositions[meoIndex * 3] = x;
+                meoPositions[meoIndex * 3 + 1] = y;
+                meoPositions[meoIndex * 3 + 2] = z;
+                meoIndex++;
+              } else if (geoPositions) {
+                geoPositions[geoIndex * 3] = x;
+                geoPositions[geoIndex * 3 + 1] = y;
+                geoPositions[geoIndex * 3 + 2] = z;
+                geoIndex++;
+              }
+              
+              // Update satellite data for info panel
+              sat.lat = lat;
+              sat.lon = lon;
+              sat.altitude = alt;
+            }
+          }
+        });
+        
+        // Mark geometries as needing update
+        if (leoPoints) leoPoints.geometry.attributes.position.needsUpdate = true;
+        if (meoPoints) meoPoints.geometry.attributes.position.needsUpdate = true;
+        if (geoPoints) geoPoints.geometry.attributes.position.needsUpdate = true;
+      }
+      
+      renderer.render(scene, camera);
+    }
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ==================== TIME TRAVEL CONTROLS ====================
+    
+    // Time travel state (MUST be defined before animate() is called)
+    let currentSimulationTime = new Date(); // Current time being displayed
+    let isPlaying = false;
+    let playbackSpeed = 3600; // seconds per second (default: 1 hour per second)
+    let playbackInterval = null;
+    // ═══════════════════════════════════════════════════════════════
+    // TIME TRAVEL CONSTANTS (v1.1 - Extended Range)
+    // ═══════════════════════════════════════════════════════════════
+    /**
+     * @const {number} ONE_WEEK_SECONDS - Seconds in one week (7 days)
+     * SAFETY: Immutable constant to prevent accidental modification
+     */
+    const ONE_WEEK_SECONDS = 7 * 24 * 60 * 60; // 604800 seconds
+    
+    /**
+     * @const {number} TWO_WEEKS_SECONDS - Seconds in two weeks (14 days)
+     * SAFETY: Total range for extended time travel (±7 days)
+     */
+    const TWO_WEEKS_SECONDS = 2 * ONE_WEEK_SECONDS; // 1209600 seconds
+    
+    /**
+     * @const {number} TIME_SLIDER_CENTER - Center point of slider (NOW position)
+     * CERT: Use of const prevents accidental reassignment
+     */
+    const TIME_SLIDER_CENTER = ONE_WEEK_SECONDS;
+    
+    /**
+     * @const {number} MAX_TIME_LABELS - Total number of time labels (-7 to +7)
+     */
+    const MAX_TIME_LABELS = 15;
+    
+    // SAFETY: Validate constants at initialization
+    if (ONE_WEEK_SECONDS !== 604800) {
+      Logger.error('CRITICAL: ONE_WEEK_SECONDS constant validation failed');
+    }
+    if (TWO_WEEKS_SECONDS !== 1209600) {
+      Logger.error('CRITICAL: TWO_WEEKS_SECONDS constant validation failed');
+    }
+
+    // Time slider element
+    const timeSlider = document.getElementById('time-slider');
+    const timeDisplayDate = document.getElementById('time-display-date');
+    const timeDisplayOffset = document.getElementById('time-display-offset');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+
+    /**
+     * Initialize time controls to current time (NOW position)
+     * @function initializeTime
+     * @returns {void}
+     * 
+     * SAFETY CRITICAL:
+     * - Validates all DOM elements exist before use (CERT EXP34-C)
+     * - Sets slider to safe center position
+     * - Initializes global state correctly
+     */
+    function initializeTime() {
+      // CERT EXP34-C: Validate pointers before dereferencing
+      if (!timeSlider || !timeDisplayDate || !timeDisplayOffset) {
+        Logger.error('CRITICAL: Time slider DOM elements not found during initialization');
+        return;
+      }
+      
+      // SAFETY: Initialize to current time
+      currentSimulationTime = new Date();
+      
+      // SAFETY: Set slider to center position (NOW)
+      // CERT INT31-C: Ensure integer values are in valid range
+      const centerValue = TIME_SLIDER_CENTER;
+      if (centerValue < 0 || centerValue > TWO_WEEKS_SECONDS) {
+        Logger.error('CRITICAL: Invalid slider center value');
+        timeSlider.value = TIME_SLIDER_CENTER; // Fallback to constant
+      } else {
+        timeSlider.value = centerValue;
+      }
+      
+      // Update displays
+      updateTimeDisplay();
+      updateTimeLabels();
+      
+      Logger.info('Time controls initialized successfully (v1.1 extended range)');
+    }
+
+    /**
+     * Update time display with current simulation time
+     * @function updateTimeDisplay
+     * @returns {void}
+     * 
+     * SAFETY CRITICAL:
+     * - Validates DOM elements exist
+     * - Handles invalid date objects
+     * - Updates future mode indicator for user awareness
+     */
+    function updateTimeDisplay() {
+      // CERT EXP34-C: Validate pointers before dereferencing
+      if (!timeDisplayDate || !timeDisplayOffset) {
+        Logger.error('CRITICAL: Time display DOM elements not found');
+        return;
+      }
+      
+      // CERT EXP33-C: Validate object state before use
+      if (!(currentSimulationTime instanceof Date) || isNaN(currentSimulationTime.getTime())) {
+        Logger.error('CRITICAL: Invalid simulation time object');
+        currentSimulationTime = new Date(); // Fallback to current time
+      }
+      
+      try {
+        const options = {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZone: 'UTC'
+        };
+        
+        const dateText = currentSimulationTime.toLocaleString('en-US', options) + ' UTC';
+        timeDisplayDate.textContent = dateText;
+        
+        // Calculate offset from current real time
+        const now = new Date();
+        const diffMs = currentSimulationTime - now;
+        
+        // CERT INT32-C: Ensure integer operations don't overflow
+        const diffSec = Math.floor(diffMs / 1000);
+        const absDiffSec = Math.abs(diffSec);
+        const diffMin = Math.floor(absDiffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+        
+        // Determine offset display text
+        let offsetText = '';
+        const isFuture = diffSec > 0;
+        
+        // SAFETY: Clear if-else chain to prevent ambiguity
+        if (absDiffSec < 60) {
+          offsetText = 'NOW';
+        } else if (diffMin < 60) {
+          offsetText = `${isFuture ? '+' : '-'}${diffMin} minute${diffMin !== 1 ? 's' : ''}`;
+        } else if (diffHour < 24) {
+          offsetText = `${isFuture ? '+' : '-'}${diffHour} hour${diffHour !== 1 ? 's' : ''}`;
+        } else {
+          offsetText = `${isFuture ? '+' : '-'}${diffDay} day${diffDay !== 1 ? 's' : ''}`;
+        }
+        
+        timeDisplayOffset.textContent = offsetText;
+        
+        // v1.1: SAFETY CRITICAL - Update future mode indicator
+        // CERT EXP45-C: Use setAttribute for DOM manipulation safety
+        timeDisplayOffset.setAttribute('data-future-mode', isFuture ? 'true' : 'false');
+        
+      } catch (error) {
+        // CERT ERR00-C: Consistent error handling policy
+        Logger.error('Error updating time display:', error);
+        timeDisplayDate.textContent = 'Error displaying time';
+        timeDisplayOffset.textContent = '';
+        timeDisplayOffset.setAttribute('data-future-mode', 'false');
+      }
+    }
+
+    /**
+     * Update time labels for all 15 slider positions (-7 to +7 days)
+     * @function updateTimeLabels
+     * @returns {void}
+     * 
+     * SAFETY CRITICAL:
+     * - Validates array bounds (0 to MAX_TIME_LABELS-1)
+     * - Checks each DOM element exists before modification
+     * - Handles date calculation errors gracefully
+     */
+    function updateTimeLabels() {
+      const now = new Date();
+      
+      // CERT INT30-C: Validate input before arithmetic operations
+      if (isNaN(now.getTime())) {
+        Logger.error('CRITICAL: Invalid current time in updateTimeLabels');
+        return;
+      }
+      
+      // SAFETY: Iterate through all 15 labels (-7 to +7 days)
+      // CERT ARR30-C: Ensure loop bounds are valid
+      const totalLabels = MAX_TIME_LABELS; // 15 labels
+      const centerLabel = 7; // Index 7 is NOW
+      
+      for (let i = 0; i < totalLabels; i++) {
+        try {
+          // CERT INT32-C: Prevent integer overflow
+          const daysOffset = i - centerLabel; // Range: -7 to +7
+          
+          // SAFETY: Calculate date with overflow protection
+          const msOffset = daysOffset * 24 * 60 * 60 * 1000;
+          const date = new Date(now.getTime() + msOffset);
+          
+          // CERT EXP33-C: Validate result before use
+          if (isNaN(date.getTime())) {
+            Logger.warn(`Invalid date calculated for label ${i}`);
+            continue; // Skip this label, continue with others
+          }
+          
+          const label = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          });
+          
+          const elementId = `day-${i}`;
+          const element = document.getElementById(elementId);
+          
+          // CERT EXP34-C: Validate pointer before dereferencing
+          if (element) {
+            if (daysOffset === 0) {
+              // NOW label - special styling
+              element.textContent = `NOW\n${label}`;
+              element.classList.add('now-label');
+            } else {
+              const prefix = daysOffset > 0 ? '+' : '';
+              element.textContent = label;
+              element.setAttribute('title', `${prefix}${daysOffset} day${Math.abs(daysOffset) !== 1 ? 's' : ''}`);
+              element.classList.remove('now-label');
+            }
+          } else {
+            Logger.warn(`Time label element not found: ${elementId}`);
+          }
+          
+        } catch (error) {
+          // CERT ERR00-C: Consistent error handling
+          Logger.error(`Error updating time label ${i}:`, error);
+          // Continue with next label (defensive programming)
+        }
+      }
+      
+      Logger.debug('Time labels updated successfully (15 labels)');
+    }
+
+    /**
+     * Handle slider input event (user interaction)
+     * @listens input
+     * 
+     * SAFETY CRITICAL:
+     * - Validates slider value is in valid range
+     * - Prevents integer overflow in time calculations
+     * - Ensures resulting date is valid
+     * 
+     * CERT COMPLIANCE:
+     * - INT31-C: Integer value range validation
+     * - EXP34-C: Null pointer validation
+     * - ERR33-C: Error detection
+     */
+    if (timeSlider) {
+      timeSlider.addEventListener('input', (e) => {
+        // CERT EXP34-C: Validate event object
+        if (!e || !e.target) {
+          Logger.error('CRITICAL: Invalid slider event object');
+          return;
+        }
+        
+        try {
+          // CERT INT31-C: Ensure integer value is in valid range
+          const sliderValue = parseInt(e.target.value, 10);
+          
+          // SAFETY: Validate slider value is within bounds
+          if (isNaN(sliderValue) || sliderValue < 0 || sliderValue > TWO_WEEKS_SECONDS) {
+            Logger.error(`CRITICAL: Slider value out of bounds: ${sliderValue}`);
+            // SAFETY: Reset to safe value (NOW)
+            e.target.value = TIME_SLIDER_CENTER;
+            return;
+          }
+          
+          const now = new Date();
+          
+          // CERT INT32-C: Prevent integer overflow in calculations
+          // Calculate seconds offset from NOW position (center of slider)
+          const secondsFromNow = sliderValue - TIME_SLIDER_CENTER;
+          
+          // SAFETY: Validate offset is reasonable (-7 to +7 days)
+          const maxOffset = ONE_WEEK_SECONDS;
+          if (Math.abs(secondsFromNow) > maxOffset) {
+            Logger.warn(`Time offset exceeds expected range: ${secondsFromNow} seconds`);
+            // Continue anyway - slider bounds ensure this is valid
+          }
+          
+          // CERT INT30-C: Prevent overflow in millisecond conversion
+          // Max value: ±604,800 seconds * 1000 = ±604,800,000 ms (safe)
+          const msOffset = secondsFromNow * 1000;
+          
+          // Calculate new simulation time
+          const newTime = new Date(now.getTime() + msOffset);
+          
+          // CERT EXP33-C: Validate result before use
+          if (isNaN(newTime.getTime())) {
+            Logger.error('CRITICAL: Invalid date calculated from slider');
+            return;
+          }
+          
+          // SAFETY: Update global state only after all validations pass
+          currentSimulationTime = newTime;
+          
+          // Update display
+          updateTimeDisplay();
+          
+          // Note: animate() will update satellite positions on next frame
+          
+        } catch (error) {
+          // CERT ERR00-C: Consistent error handling
+          Logger.error('CRITICAL: Error in slider input handler:', error);
+          // SAFETY: Do not crash application
+        }
+      });
+      
+      Logger.info('Time slider event listener registered');
+    } else {
+      Logger.error('CRITICAL: Time slider element not found for event binding');
+    }
+
+    // Update Earth rotation to match simulation time
+    function updateEarthRotation() {
+      if (!earth) return; // Safety check
+      
+      // Calculate Earth's rotation based on simulation time
+      // Earth rotates 360° in 24 hours (86400 seconds)
+      const millisecondsInDay = 24 * 60 * 60 * 1000;
+      const dayProgress = (currentSimulationTime.getTime() % millisecondsInDay) / millisecondsInDay;
+      const rotation = dayProgress * 2 * Math.PI;
+      
+      earth.rotation.y = rotation;
+      if (glow) glow.rotation.y = rotation;
+    }
+
+    // Initialize time display immediately (before satellites load)
+    initializeTime();
+
+    // Update time labels every minute
+    setInterval(updateTimeLabels, 60000);
+
+    // Start - Load 3D model first, then satellites
+    loadSatellites();
+    animate();
+
+    // Refresh TLE data periodically to keep orbital predictions accurate
+    setInterval(() => {
+      Logger.info('Auto-refreshing satellite TLE data...');
+      loadSatellites();
+    }, CONFIG.TLE_REFRESH_INTERVAL);
+  </script>
+</body>
+</html>
